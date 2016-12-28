@@ -10,7 +10,7 @@ Check client ip for koa & express.
 var express = require('express')
   , app     = express();
 app.use(require('ip-checker')({
-  default: '*',
+  default: 'x',
   allow: ['127.0.0.1']
 }));
 app.listen(3000)
@@ -21,7 +21,7 @@ app.listen(3000)
 ```js
 var app = require('koa')()
 app.use(require('ip-checker')({
-  default: '*',
+  default: 'x',
   allow: ['127.0.0.1'],
   mode: 'koa'
 }))
