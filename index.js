@@ -63,86 +63,116 @@ module.exports = function(c) {
   config.block    = config.block || [];
   config.mode     = config.mode || 'express';
 
+  if (config.emitter) {
+    config.emitter.on('disable', function(s) {
+      config.disable = s;
+    })
+  }
+
   DEBUG && console.log('ip-checker-config:' + JSON.stringify(config));
 
+  // Return express function
   if (config.mode === 'express') {
+
+    // Optimize it.
+    if (config.default === '*' && config.block.length === 0 && config.allow === 0) {
+      return function(req, res, next) {
+        next();
+      }
+    }
 
     return function(req, res, next) {
 
       if (config.disable === true) {
-        return next();
-      }
 
-      var action = '';
-
-      if (typeof config.checker === 'string') {
-        action = checker[config.checker](req, res);
-      } else {
-        action = config.checker(req, res);
-      }
-
-      if (action === 'allow') {
-
-        next()
-
-      } else if (action === 'block') {
-
-        res.set('Content-Type', 'text/html; charset=utf-8');
-        res.end(errorHTML)
+        next();
 
       } else {
 
-        if (config.default === 'x') {
+        var action = '';
+
+        if (typeof config.checker === 'string') {
+          action = checker[config.checker](req, res);
+        } else {
+          action = config.checker(req, res);
+        }
+
+        if (action === 'allow') {
+
+          next()
+
+        } else if (action === 'block') {
 
           res.set('Content-Type', 'text/html; charset=utf-8');
-          res.end(errorHTML);
+          res.end(errorHTML)
 
         } else {
 
-          next();
+          if (config.default === 'x') {
 
+            res.set('Content-Type', 'text/html; charset=utf-8');
+            res.end(errorHTML);
+
+          } else {
+
+            next();
+
+          }
         }
       }
     }
 
+  // return koa function*
   } else {
+
+    // Optimize it
+    if (config.default === '*' && config.block.length === 0 && config.allow === 0) {
+      return function* (next) {
+        yield next;
+      }
+    }
 
     return function* (next) {
 
       if (config.disable === true) {
+
         yield next;
-      }
-
-      var action = '';
-
-      if (typeof config.checker === 'string') {
-        action = checker[config.checker](this);
-      } else {
-        action = config.checker(this);
-      }
-
-      if (action === 'allow') {
-
-        yield next
-
-      } else if (action === 'block') {
-
-        this.set('Content-Type', 'text/html; charset=utf-8');
-        this.body = errorHTML;
 
       } else {
 
-        if (config.default === 'x') {
+        var action = '';
+
+        if (typeof config.checker === 'string') {
+          action = checker[config.checker](this);
+        } else {
+          action = config.checker(this);
+        }
+
+        if (action === 'allow') {
+
+          yield next
+
+        } else if (action === 'block') {
 
           this.set('Content-Type', 'text/html; charset=utf-8');
           this.body = errorHTML;
 
         } else {
 
-          yield next
+          if (config.default === 'x') {
 
+            this.set('Content-Type', 'text/html; charset=utf-8');
+            this.body = errorHTML;
+
+          } else {
+
+            yield next
+
+          }
         }
+
       }
+
     }
   }
 
